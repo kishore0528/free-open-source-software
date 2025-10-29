@@ -1,0 +1,43 @@
+1. POST http://localhost:3000/api/auth/register
+JSON - Body
+
+{
+  "username": "john",
+  "password": "1234"
+}
+
+2. POST http://localhost:3000/api/auth/login
+JSON - Body
+
+{
+  "username": "john",
+  "password": "1234"
+}
+
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImpvaG4iLCJpYXQiOjE3NTk3NjAwODh9.FWp3uqWl0bcYAMOYYfC3XxrqJ7aS6drZUvgyXzlyM4s"
+}
+
+Output:
+
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImpvaG4iLCJpYXQiOjE3NTg4NjcwMjh9.jg_NSBOrJ3qD90KlUjEtFNYEhru6cbqCdQCoOfn0L30"
+}
+
+3. POST http://localhost:3000/api/blogs
+Auth Bearer <token>
+JSON Body
+
+{
+  "title": "My First Blog",
+  "content": "Hello from curl!"
+}
+
+Output
+{
+  "id": 1,
+  "title": "My First Blog",
+  "content": "Hello from curl!",
+  "author": "john"
+}
+
