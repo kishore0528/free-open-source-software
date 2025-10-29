@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal Notification Sender</title>
+    <link href="[https://unpkg.com/tailwindcss](https://unpkg.com/tailwindcss)@^2/dist/tailwind.min.css" rel="stylesheet">
+    <link href="[https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap)" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            text-align: center;
+        }
+        .container h2 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .input-area {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .input-area textarea {
+            padding: 0.75rem 1rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+            resize: vertical;
+            min-height: 80px;
+        }
+        .input-area textarea:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        .input-area button {
+            background-color: #6366f1;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            outline: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .input-area button:hover {
+            background-color: #4f46e5;
+            transform: translateY(-1px);
+        }
+        .input-area button:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        .notification-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .notification-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 0.75rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-align: center;
+            position: relative;
+        }
+        .notification-content h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        .notification-content p {
+            font-size: 1rem;
+            color: #555;
+            margin-bottom: 1.5rem;
+        }
+        .notification-content button {
+            background-color: #6366f1;
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+        }
+        .notification-content button:hover {
+            background-color: #4f46e5;
+        }
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Send a Notification</h2>
+        <div class="input-area">
+            <textarea id="notificationMessageInput" placeholder="Type your notification message..." rows="4"></textarea>
+            <button id="sendNotificationButton">Send Notification</button>
+        </div>
+    </div>
+
+    <div id="notificationModal" class="notification-modal">
+        <div class="notification-content">
+            <span class="close-button" id="closeModalButton">&times;</span>
+            <h3>New Notification!</h3>
+            <p id="receivedNotificationText"></p>
+            <button id="okModalButton">OK</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        const notificationMessageInput = document.getElementById("notificationMessageInput");
+        const sendNotificationButton = document.getElementById("sendNotificationButton");
+
+        const notificationModal = document.getElementById("notificationModal");
+        const receivedNotificationText = document.getElementById("receivedNotificationText");
+        const closeModalButton = document.getElementById("closeModalButton");
+        const okModalButton = document.getElementById("okModalButton");
+
+        sendNotificationButton.addEventListener("click", () => {
+            const message = notificationMessageInput.value.trim();
+
+            if (message === "") {
+                alert("Please enter a notification message.");
+                return;
+            }
+
+            socket.emit("sendNotification", { message: message });
+            notificationMessageInput.value = "";
+        });
+
+        notificationMessageInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendNotificationButton.click();
+            }
+        });
+
+        socket.on("notification", (message) => {
+            if (!document.hasFocus()) {
+                receivedNotificationText.textContent = message;
+                notificationModal.style.display = "flex";
+            } else {
+                console.log("Received notification (tab focused):", message);
+            }
+        });
+
+        closeModalButton.addEventListener("click", () => {
+            notificationModal.style.display = "none";
+        });
+        okModalButton.addEventListener("click", () => {
+            notificationModal.style.display = "none";
+        });
+        window.addEventListener("click", (event) => {
+            if (event.target === notificationModal) {
+                notificationModal.style.display = "none";
+            }
+        });
+    </script>
+</body>
