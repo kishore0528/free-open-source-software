@@ -1,0 +1,37 @@
+---
+- name: Deploy Task Management GraphQL API
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Ensure Node.js and npm are installed
+      apt:
+        name:
+          - nodejs
+          - npm
+        state: present
+        update_cache: yes
+
+    - name: Install pm2
+      npm:
+        name: pm2
+        global: yes
+
+    - name: Copy project files to WSL home directory (excluding node_modules)
+      synchronize:
+        src: /mnt/d/Asset/Documents/BIT Hub/Archive/Academia/Offline/22CS504 - Free Open Source Software/labs/exp5/
+        dest: /home/kishore/taskapi/
+        rsync_opts:
+          - "--exclude=node_modules"
+          - "--exclude=.git"
+
+    - name: Install project dependencies
+      shell: |
+        cd /home/kishore/taskapi && npm install
+      args:
+        creates: /home/kishore/taskapi/node_modules
+
+    - name: Start or restart the GraphQL server with pm2
+      shell: |
+        cd /home/kishore/taskapi
+        pm2 start npm --name "taskapi" -- start || pm2 restart taskapi 
